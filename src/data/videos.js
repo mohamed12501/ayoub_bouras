@@ -46,7 +46,7 @@ export const videos = [
     {
         id: 7,
         filename: 'FINAL 1900.mp4',
-        title: 'Final 1900',
+        title: 'Iron Body 3',
         category: 'Promotional',
         src: 'https://res.cloudinary.com/dutjogici/video/upload/v1772559912/FINAL_1900_axjzab.mp4',
     },
@@ -67,21 +67,21 @@ export const videos = [
     {
         id: 10,
         filename: 'FINAL VIDEO.mp4',
-        title: 'Final Video',
+        title: 'talib hafid',
         category: 'Educational',
         src: 'https://res.cloudinary.com/dutjogici/video/upload/v1772559119/FINAL_VIDEO_chkllu.mp4',
     },
     {
         id: 11,
         filename: 'OUDHA VOIC OVER.mp4',
-        title: 'Oudha Voice Over',
+        title: 'Iron Body 2',
         category: 'Promotional',
         src: 'https://res.cloudinary.com/dutjogici/video/upload/v1772559182/OUDHA_VOIC_OVER_p9nr7v.mp4',
     },
     {
         id: 12,
         filename: 'PROJECT 5 FINAL.mp4',
-        title: 'Project 5 — Final',
+        title: 'Project 5 ',
         category: 'Social Media',
         src: 'https://res.cloudinary.com/dutjogici/video/upload/v1772557106/PROJECT_5_FINAL_pfdvax.mp4',
     },
@@ -102,7 +102,7 @@ export const videos = [
     {
         id: 15,
         filename: 'bourse final video_1.mp4',
-        title: 'Bourse Final Video',
+        title: 'Iron Body 5',
         category: 'Promotional',
         src: 'https://res.cloudinary.com/dutjogici/video/upload/v1772559592/bourse_final_video_1_j4mrmo.mp4',
     },

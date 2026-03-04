@@ -197,7 +197,7 @@ export default function Contact() {
                     >
                         <div className="glass rounded-2xl p-6 mb-2">
                             <h3 className="text-white font-bold text-lg mb-1">Ayoub</h3>
-                            <p className="text-gray-400 text-sm">Freelance Video Editor & Motion Designer</p>
+                            <p className="text-gray-400 text-sm">Freelance Video Editor</p>
                             <p className="text-gray-500 text-xs mt-1">Based in Algeria · Available Worldwide</p>
                         </div>
 

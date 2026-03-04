@@ -82,7 +82,7 @@ export default function Hero() {
                     className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4"
                 >
                     <span className="gradient-text">Video Editor</span>
-                    <span className="text-white/70"> & Motion Designer</span>
+                    {/*    <span className="text-white/70"> & Motion Designer</span> */}
                 </motion.h2>
 
                 {/* Subtitle */}
