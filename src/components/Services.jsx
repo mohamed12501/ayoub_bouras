@@ -12,11 +12,7 @@ const services = [
         title: 'Color Grading',
         description: 'Cinematic color correction for every style — from warm filmic tones to cold commercial looks.',
     },
-    {
-        icon: '✨',
-        title: 'Motion Graphics',
-        description: 'Smooth animations and dynamic text effects crafted in Premiere Pro to elevate your content.',
-    },
+ 
     {
         icon: '🔊',
         title: 'Sound Design',

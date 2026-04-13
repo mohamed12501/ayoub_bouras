@@ -1,4 +1,6 @@
-// Video files served from Cloudinary CDN
+// Video files served from Cloudinary CDN and Google Drive
+
+const driveVideo = (id) => `https://drive.google.com/uc?export=download&id=${id}`
 
 export const videos = [
     {
@@ -141,6 +143,21 @@ export const videos = [
         category: 'Promotional',
         src: 'https://res.cloudinary.com/dutjogici/video/upload/v1772560135/straps_2en1_final_jzjtdk.mp4',
     },
+    {
+        id: 21,
+        filename: 'Before_And_After_GAGS.mp4',
+        title: 'Before And After GAGS',
+        category: 'Promotional',
+        src: 'https://res.cloudinary.com/dkqqco1iw/video/upload/v1776081305/Before_And_After_GAGS_bj7vgq.mp4',
+    },
+    {
+        id: 22,
+        filename: 'final_retintion_editng.mp4',
+        title: 'Final Retention Editing',
+        category: 'Promotional',
+        src: 'https://res.cloudinary.com/dkqqco1iw/video/upload/v1776081361/final_retintion_editng_qgr5ut.mp4',
+    },
+
 ]
 
 // The first video used as the hero showreel
