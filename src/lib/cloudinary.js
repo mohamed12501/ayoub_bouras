@@ -60,7 +60,8 @@ export function getGoogleDriveFileId(videoUrl) {
 export function getPlayableVideoUrl(videoUrl) {
   const fileId = getGoogleDriveFileId(videoUrl)
   if (fileId) {
-    return `https://drive.google.com/uc?export=download&id=${fileId}`
+    // Use the Google Drive direct link with export parameter for streaming
+    return `https://drive.google.com/uc?id=${fileId}`
   }
 
   return videoUrl || ''

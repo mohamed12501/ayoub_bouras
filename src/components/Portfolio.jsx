@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import {
     getCloudinaryVideoPosterUrl,
     getGoogleDriveThumbnailUrl,
+    getGoogleDrivePreviewUrl,
     getOpenVideoUrl,
     getPlayableVideoUrl,
     isGoogleDriveVideoUrl,
@@ -20,8 +21,8 @@ const categoryColors = {
 function VideoCard({ video, onOpen }) {
     const videoRef = useRef(null)
     const [isHovered, setIsHovered] = useState(false)
-    const drivePreviewUrl = isGoogleDriveVideoUrl(video.url) ? getGoogleDrivePreviewUrl(video.url) : ''
     const posterUrl = video.thumbnail || getCloudinaryVideoPosterUrl(video.url) || getGoogleDriveThumbnailUrl(video.url)
+    const playbackUrl = getPlayableVideoUrl(video.url)
 
     useEffect(() => {
         const v = videoRef.current
@@ -48,33 +49,26 @@ function VideoCard({ video, onOpen }) {
             onClick={() => onOpen(video)}
         >
             {/* Video preview on hover */}
-            {drivePreviewUrl ? (
-                posterUrl ? (
-                    <img
-                        src={posterUrl}
-                        alt={video.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 text-slate-500">
-                        <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.55-2.27A1 1 0 0121 8.61v6.78a1 1 0 01-1.45.89L15 14m0 0V8m0 6l-4.55 2.27A1 1 0 019 15.39V8.61a1 1 0 011.45-.89L15 10z" />
-                        </svg>
-                    </div>
-                )
-            ) : (
-                <video
-                    ref={videoRef}
-                    src={getPlayableVideoUrl(video.url)}
-                    muted
-                    loop
-                    playsInline
-                    poster={posterUrl}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+            <video
+                ref={videoRef}
+                src={playbackUrl || undefined}
+                muted
+                loop
+                playsInline
+                poster={posterUrl || undefined}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            
+            {/* Fallback placeholder if no poster */}
+            {!posterUrl && (
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 text-slate-500 absolute inset-0">
+                    <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.55-2.27A1 1 0 0121 8.61v6.78a1 1 0 01-1.45.89L15 14m0 0V8m0 6l-4.55 2.27A1 1 0 019 15.39V8.61a1 1 0 011.45-.89L15 10z" />
+                    </svg>
+                </div>
             )}
 
-            {/* Fallback thumbnail layer */}
+            {/* Fallback thumbnail layer - shown when video hasn't loaded */}
             {posterUrl && (
                 <img
                     src={posterUrl}
@@ -119,6 +113,7 @@ function VideoCard({ video, onOpen }) {
 function VideoModal({ video, onClose }) {
     const driveLink = typeof video.url === 'string' && video.url.includes('drive.google.com')
     const driveFileId = isGoogleDriveVideoUrl(video.url)
+    const drivePreviewUrl = driveLink ? getGoogleDrivePreviewUrl(video.url) : ''
     const playbackUrl = getPlayableVideoUrl(video.url)
     const [playbackFailed, setPlaybackFailed] = useState(false)
 
@@ -161,24 +156,40 @@ function VideoModal({ video, onClose }) {
 
                     {/* Video */}
                     <div className="aspect-video bg-black">
-                        {driveLink && playbackFailed ? (
-                            <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center text-slate-200">
-                                <div className="max-w-md text-sm leading-6 text-slate-300">
-                                    Google Drive is not allowing this file to stream in the player. Open it in a new tab, or make sure the file link is public and points to the video file itself.
+                        {driveLink ? (
+                            playbackFailed ? (
+                                <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center text-slate-200">
+                                    <div className="max-w-md text-sm leading-6 text-slate-300">
+                                        Google Drive is not allowing this file to stream in the player. Open it in a new tab, or make sure the file link is public and points to the video file itself.
+                                    </div>
+                                    <a
+                                        href={getOpenVideoUrl(video.url)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-dark transition-colors hover:bg-accent/90"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3h7m0 0v7m0-7L10 14" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5h5M5 5v14h14v-5" />
+                                        </svg>
+                                        Open in Drive
+                                    </a>
                                 </div>
-                                <a
-                                    href={getOpenVideoUrl(video.url)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-dark transition-colors hover:bg-accent/90"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3h7m0 0v7m0-7L10 14" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5h5M5 5v14h14v-5" />
-                                    </svg>
-                                    Open in Drive
-                                </a>
-                            </div>
+                            ) : drivePreviewUrl ? (
+                                <iframe
+                                    src={drivePreviewUrl}
+                                    title={video.title}
+                                    className="w-full h-full"
+                                    allow="autoplay; encrypted-media"
+                                    allowFullScreen
+                                    onLoad={() => setPlaybackFailed(false)}
+                                    onError={() => setPlaybackFailed(true)}
+                                />
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center px-6 text-center text-slate-300">
+                                    Unable to open this Drive video. Use the Open in Drive button below.
+                                </div>
+                            )
                         ) : (
                             <video
                                 src={playbackUrl}
