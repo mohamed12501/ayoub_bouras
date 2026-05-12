@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabaseClient'
 import {
     getCloudinaryVideoPosterUrl,
-    getGoogleDrivePreviewUrl,
     getGoogleDriveThumbnailUrl,
     getOpenVideoUrl,
     getPlayableVideoUrl,
@@ -118,7 +117,10 @@ function VideoCard({ video, onOpen }) {
 }
 
 function VideoModal({ video, onClose }) {
-    const drivePreviewUrl = isGoogleDriveVideoUrl(video.url) ? getGoogleDrivePreviewUrl(video.url) : ''
+    const driveLink = typeof video.url === 'string' && video.url.includes('drive.google.com')
+    const driveFileId = isGoogleDriveVideoUrl(video.url)
+    const playbackUrl = getPlayableVideoUrl(video.url)
+    const [playbackFailed, setPlaybackFailed] = useState(false)
 
     useEffect(() => {
         const onKey = (e) => { if (e.key === 'Escape') onClose() }
@@ -159,19 +161,30 @@ function VideoModal({ video, onClose }) {
 
                     {/* Video */}
                     <div className="aspect-video bg-black">
-                        {drivePreviewUrl ? (
-                            <iframe
-                                src={drivePreviewUrl}
-                                title={video.title}
-                                className="h-full w-full"
-                                allow="autoplay"
-                                allowFullScreen
-                            />
+                        {driveLink && playbackFailed ? (
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center text-slate-200">
+                                <div className="max-w-md text-sm leading-6 text-slate-300">
+                                    Google Drive is not allowing this file to stream in the player. Open it in a new tab, or make sure the file link is public and points to the video file itself.
+                                </div>
+                                <a
+                                    href={getOpenVideoUrl(video.url)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-dark transition-colors hover:bg-accent/90"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3h7m0 0v7m0-7L10 14" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5h5M5 5v14h14v-5" />
+                                    </svg>
+                                    Open in Drive
+                                </a>
+                            </div>
                         ) : (
                             <video
-                                src={getPlayableVideoUrl(video.url)}
+                                src={playbackUrl}
                                 controls
                                 autoPlay
+                                onError={() => setPlaybackFailed(true)}
                                 className="w-full h-full"
                             />
                         )}
