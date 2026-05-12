@@ -1,9 +1,10 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { showreelVideo } from '../data/videos'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Hero() {
     const videoRef = useRef(null)
+    const [showreelSrc, setShowreelSrc] = useState('')
 
     useEffect(() => {
         const video = videoRef.current
@@ -12,6 +13,15 @@ export default function Hero() {
                 // Autoplay may be blocked — already muted so should be fine
             })
         }
+    }, [])
+
+    useEffect(() => {
+        async function loadShowreel() {
+            const { data, error } = await supabase.from('videos').select('url').order('created_at', { ascending: false }).limit(1)
+            if (error) return console.error('load showreel', error)
+            if (data && data.length) setShowreelSrc(data[0].url)
+        }
+        loadShowreel()
     }, [])
 
     const scrollTo = (id) => {
@@ -27,7 +37,7 @@ export default function Hero() {
             {/* Background video */}
             <video
                 ref={videoRef}
-                src={showreelVideo}
+                src={showreelSrc}
                 autoPlay
                 muted
                 loop

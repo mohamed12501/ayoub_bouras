@@ -6,6 +6,7 @@ import Portfolio from './components/Portfolio'
 import About from './components/About'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
+import AyoubAdminDashboard from './components/AyoubAdminDashboard'
 
 function App() {
     const [scrolled, setScrolled] = useState(false)
@@ -17,6 +18,11 @@ function App() {
         window.addEventListener('scroll', handleScroll, { passive: true })
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
+
+    // simple routing: serve admin dashboard at /ayoub_admin_dashboard
+    if (typeof window !== 'undefined' && window.location.pathname === '/ayoub_admin_dashboard') {
+        return <AyoubAdminDashboard />
+    }
 
     return (
         <div className="min-h-screen bg-dark text-white">

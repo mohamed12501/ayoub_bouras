@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { videos } from '../data/videos'
+import { supabase } from '../lib/supabaseClient'
 
 const CATEGORIES = ['All']
 
@@ -8,6 +8,15 @@ const categoryColors = {
     'Social Media': 'bg-pink-500/20 text-pink-300 border-pink-500/30',
     'Promotional': 'bg-accent/20 text-accent border-accent/30',
     'Educational': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+}
+
+function getVideoPoster(video) {
+    if (video.thumbnail) return video.thumbnail
+    if (!video.url || !video.url.includes('/video/upload/')) return ''
+
+    return video.url
+        .replace('/video/upload/', '/video/upload/so_0/')
+        .replace(/\.(mp4|mov|webm)(\?.*)?$/i, '.jpg$2')
 }
 
 function VideoCard({ video, onOpen }) {
@@ -41,12 +50,22 @@ function VideoCard({ video, onOpen }) {
             {/* Video preview on hover */}
             <video
                 ref={videoRef}
-                src={video.src}
+                src={video.url}
                 muted
                 loop
                 playsInline
+                poster={getVideoPoster(video)}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
+
+            {/* Fallback thumbnail layer */}
+            {getVideoPoster(video) && (
+                <img
+                    src={getVideoPoster(video)}
+                    alt={video.title}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}
+                />
+            )}
 
             {/* Dark overlay */}
             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
@@ -122,7 +141,7 @@ function VideoModal({ video, onClose }) {
                     {/* Video */}
                     <div className="aspect-video bg-black">
                         <video
-                            src={video.src}
+                            src={video.url}
                             controls
                             autoPlay
                             className="w-full h-full"
@@ -137,9 +156,24 @@ function VideoModal({ video, onClose }) {
                                 {video.category}
                             </span>
                         </div>
-                        <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors text-sm">
-                            Close
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <a
+                                href={video.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-dark transition-colors hover:bg-accent/90"
+                                aria-label={`Open ${video.title} in a new tab`}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3h7m0 0v7m0-7L10 14" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5h5M5 5v14h14v-5" />
+                                </svg>
+                                Open
+                            </a>
+                            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors text-sm">
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </motion.div>
@@ -150,10 +184,22 @@ function VideoModal({ video, onClose }) {
 export default function Portfolio() {
     const [activeCategory, setActiveCategory] = useState('All')
     const [selectedVideo, setSelectedVideo] = useState(null)
+    const [videosData, setVideosData] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => { fetchVideos() }, [])
+
+    async function fetchVideos() {
+        setLoading(true)
+        const { data, error } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
+        if (error) console.error('fetch videos', error)
+        else setVideosData(data || [])
+        setLoading(false)
+    }
 
     const filtered = activeCategory === 'All'
-        ? videos
-        : videos.filter((v) => v.category === activeCategory)
+        ? videosData
+        : videosData.filter((v) => v.category === activeCategory)
 
     return (
         <section id="portfolio" className="py-24 md:py-32 relative bg-card/30">
@@ -190,7 +236,7 @@ export default function Portfolio() {
                         >
                             {cat}
                             <span className="ml-2 text-xs opacity-60">
-                                {cat === 'All' ? videos.length : videos.filter(v => v.category === cat).length}
+                                {cat === 'All' ? videosData.length : videosData.filter(v => v.category === cat).length}
                             </span>
                         </button>
                     ))}
