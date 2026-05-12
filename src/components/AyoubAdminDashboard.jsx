@@ -11,6 +11,10 @@ function getVideoPoster(video) {
 }
 
 export default function AyoubAdminDashboard() {
+  const [session, setSession] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authForm, setAuthForm] = useState({ email: '', password: '' })
+  const [authError, setAuthError] = useState('')
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ title: '', url: '', description: '', thumbnail: '' })
@@ -18,8 +22,48 @@ export default function AyoubAdminDashboard() {
   const editingVideo = videos.find((video) => video.id === editingId)
 
   useEffect(() => {
-    fetchVideos()
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setAuthLoading(false)
+    })
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      if (nextSession) {
+        fetchVideos()
+      } else {
+        setVideos([])
+      }
+    })
+
+    return () => authListener.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (session) fetchVideos()
+  }, [session])
+
+  async function handleSignIn(e) {
+    e.preventDefault()
+    setAuthError('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authForm.email,
+      password: authForm.password,
+    })
+
+    if (error) {
+      setAuthError(error.message)
+      return
+    }
+
+    setAuthForm({ email: '', password: '' })
+  }
+
+  async function handleSignOut() {
+    const { error } = await supabase.auth.signOut()
+    if (error) alert(error.message)
+  }
 
   async function fetchVideos() {
     setLoading(true)
@@ -60,6 +104,71 @@ export default function AyoubAdminDashboard() {
     fetchVideos()
   }
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#07111f] text-slate-100 flex items-center justify-center px-4">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.04] px-6 py-5 text-sm text-slate-300 shadow-2xl shadow-black/20 backdrop-blur-xl">
+          Loading admin access...
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-[#07111f] text-slate-100 flex items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+          <div className="mb-6">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">
+              Secure Access
+            </div>
+            <h1 className="text-2xl font-black text-white">Admin sign in</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Sign in with your Supabase auth account to manage the portfolio videos.
+            </p>
+          </div>
+
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-300">Email</span>
+              <input
+                type="email"
+                placeholder="admin@example.com"
+                value={authForm.email}
+                onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/20"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-300">Password</span>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={authForm.password}
+                onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/20"
+              />
+            </label>
+
+            {authError && (
+              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                {authError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110"
+            >
+              Sign in
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#07111f] text-slate-100">
       <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -93,6 +202,14 @@ export default function AyoubAdminDashboard() {
                 <div className="mt-1 text-2xl font-bold text-emerald-300">Live</div>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex w-fit items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+            >
+              Sign out
+            </button>
           </div>
         </div>
       </div>
