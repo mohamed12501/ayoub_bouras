@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-
-function getVideoPoster(video) {
-  if (video.thumbnail) return video.thumbnail
-  if (!video.url || !video.url.includes('/video/upload/')) return ''
-
-  return video.url
-    .replace('/video/upload/', '/video/upload/so_0/')
-    .replace(/\.(mp4|mov|webm)(\?.*)?$/i, '.jpg$2')
-}
+import {
+  getCloudinaryVideoPosterUrl,
+  getGoogleDriveFileId,
+  getGoogleDriveThumbnailUrl,
+  getOpenVideoUrl,
+  getPlayableVideoUrl,
+  uploadVideoToCloudinary,
+} from '../lib/cloudinary'
 
 export default function AyoubAdminDashboard() {
   const [session, setSession] = useState(null)
@@ -18,8 +17,15 @@ export default function AyoubAdminDashboard() {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ title: '', url: '', description: '', thumbnail: '' })
+  const [videoFile, setVideoFile] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const editingVideo = videos.find((video) => video.id === editingId)
+
+  function resetForm() {
+    setForm({ title: '', url: '', description: '', thumbnail: '' })
+    setVideoFile(null)
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -73,28 +79,63 @@ export default function AyoubAdminDashboard() {
     setLoading(false)
   }
 
-  async function handleAdd(e) {
+  async function handleAddOrUpdate(e) {
     e.preventDefault()
-    if (!form.title || !form.url) return alert('title and url required')
-    const { data, error } = await supabase.from('videos').insert([{ ...form }])
-    if (error) return alert(error.message)
-    setForm({ title: '', url: '', description: '', thumbnail: '' })
-    fetchVideos()
+    if (!form.title) return alert('title required')
+
+    setSubmitting(true)
+
+    try {
+      let videoUrl = form.url.trim()
+      let thumbnailUrl = form.thumbnail.trim()
+
+      if (videoFile) {
+        const uploadResult = await uploadVideoToCloudinary(videoFile, { folder: 'ayoub-portfolio' })
+        videoUrl = uploadResult.secure_url || uploadResult.url || ''
+        if (!thumbnailUrl) {
+          thumbnailUrl = getCloudinaryVideoPosterUrl(videoUrl)
+        }
+      } else if (videoUrl.includes('drive.google.com')) {
+        const fileId = getGoogleDriveFileId(videoUrl)
+        if (!fileId) {
+          throw new Error('Use a Google Drive file link, not a folder or home page link')
+        }
+
+        videoUrl = getPlayableVideoUrl(videoUrl)
+      }
+
+      if (!videoUrl) {
+        throw new Error('Select a video file to upload or provide a video URL')
+      }
+
+      const payload = {
+        title: form.title.trim(),
+        url: videoUrl,
+        description: form.description.trim(),
+        thumbnail: thumbnailUrl || null,
+      }
+
+      const query = editingId
+        ? supabase.from('videos').update(payload).eq('id', editingId)
+        : supabase.from('videos').insert([payload])
+
+      const { error } = await query
+      if (error) throw error
+
+      setEditingId(null)
+      resetForm()
+      fetchVideos()
+    } catch (error) {
+      alert(error.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function startEdit(v) {
     setEditingId(v.id)
     setForm({ title: v.title || '', url: v.url || '', description: v.description || '', thumbnail: v.thumbnail || '' })
-  }
-
-  async function handleUpdate(e) {
-    e.preventDefault()
-    if (!editingId) return
-    const { error } = await supabase.from('videos').update({ ...form }).eq('id', editingId)
-    if (error) return alert(error.message)
-    setEditingId(null)
-    setForm({ title: '', url: '', description: '', thumbnail: '' })
-    fetchVideos()
+    setVideoFile(null)
   }
 
   async function handleDelete(id) {
@@ -215,7 +256,7 @@ export default function AyoubAdminDashboard() {
       </div>
 
       <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8 lg:py-8">
-        <section className="h-fit rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl lg:sticky lg:top-6">
+        <section className="h-fit rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:self-start">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-white">{editingId ? 'Edit video' : 'Add video'}</h2>
@@ -228,7 +269,7 @@ export default function AyoubAdminDashboard() {
                 type="button"
                 onClick={() => {
                   setEditingId(null)
-                  setForm({ title: '', url: '', description: '', thumbnail: '' })
+                  resetForm()
                 }}
                 className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
               >
@@ -243,7 +284,7 @@ export default function AyoubAdminDashboard() {
             </div>
           )}
 
-          <form onSubmit={editingId ? handleUpdate : handleAdd} className="mt-5 space-y-4">
+          <form onSubmit={handleAddOrUpdate} className="mt-5 space-y-4">
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-300">Title</span>
               <input
@@ -255,13 +296,31 @@ export default function AyoubAdminDashboard() {
             </label>
 
             <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-300">Video File</span>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                className="w-full rounded-2xl border border-dashed border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300 outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:border-emerald-400/40"
+              />
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {videoFile
+                  ? `Selected file: ${videoFile.name}`
+                  : 'Choose a video to upload to Cloudinary. The saved DB record will use the returned URL.'}
+              </p>
+            </label>
+
+            <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-300">Video URL</span>
               <input
-                placeholder="Cloudinary or external mp4"
+                placeholder="Cloudinary, mp4, or Google Drive file link"
                 value={form.url}
                 onChange={(e) => setForm({ ...form, url: e.target.value })}
                 className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/20"
               />
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Google Drive links need to point to a file or share link. Home or folder pages cannot be played as videos.
+              </p>
             </label>
 
             <label className="block">
@@ -287,9 +346,10 @@ export default function AyoubAdminDashboard() {
 
             <button
               type="submit"
+              disabled={submitting}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110"
             >
-              {editingId ? 'Update video' : 'Create video'}
+              {submitting ? 'Uploading...' : editingId ? 'Update video' : 'Create video'}
             </button>
           </form>
         </section>
@@ -321,9 +381,9 @@ export default function AyoubAdminDashboard() {
               {videos.map((video) => (
                 <article key={video.id} className="group overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-black/30">
                   <div className="relative aspect-video overflow-hidden bg-slate-900">
-                    {getVideoPoster(video) ? (
+                    {video.thumbnail || getCloudinaryVideoPosterUrl(video.url) || getGoogleDriveThumbnailUrl(video.url) ? (
                       <img
-                        src={getVideoPoster(video)}
+                        src={video.thumbnail || getCloudinaryVideoPosterUrl(video.url) || getGoogleDriveThumbnailUrl(video.url)}
                         alt={video.title}
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
@@ -341,7 +401,7 @@ export default function AyoubAdminDashboard() {
                     </div>
                     <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-2">
                       <a
-                        href={video.url}
+                        href={getOpenVideoUrl(video.url)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-white/20"
@@ -353,7 +413,7 @@ export default function AyoubAdminDashboard() {
                         Open
                       </a>
                       <a
-                        href={video.url}
+                        href={getOpenVideoUrl(video.url)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center justify-center rounded-full bg-emerald-400/90 p-2 text-slate-950 transition hover:bg-emerald-300"
