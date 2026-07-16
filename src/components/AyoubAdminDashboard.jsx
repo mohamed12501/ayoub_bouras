@@ -295,7 +295,7 @@ export default function AyoubAdminDashboard() {
               />
             </label>
 
-            <label className="block">
+          {/*  <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-300">Video File</span>
               <input
                 type="file"
@@ -308,7 +308,7 @@ export default function AyoubAdminDashboard() {
                   ? `Selected file: ${videoFile.name}`
                   : 'Choose a video to upload to Cloudinary. The saved DB record will use the returned URL.'}
               </p>
-            </label>
+            </label>*/}
 
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-300">Video URL</span>
