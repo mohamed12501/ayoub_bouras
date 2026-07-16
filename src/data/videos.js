@@ -8,7 +8,7 @@ export const videos = [
         filename: 'Are you struggling to find clients (1).mp4',
         title: 'Are You Struggling to Find Clients',
         category: 'Social Media',
-        src: 'https://drive.google.com/file/d/1gi4Xr6sdjShBothlA20ior0vuO--pwFu/view?usp=drive_link',
+        src: 'https://drive.google.com/uc?export=download&id=1gi4Xr6sdjShBothlA20ior0vuO--pwFu',
     },
     {
         id: 2,
