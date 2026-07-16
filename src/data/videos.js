@@ -8,7 +8,7 @@ export const videos = [
         filename: 'Are you struggling to find clients (1).mp4',
         title: 'Are You Struggling to Find Clients',
         category: 'Social Media',
-        src: 'https://res.cloudinary.com/dutjogici/video/upload/v1772557362/Are_you_struggling_to_find_clients_1_zcsnif.mp4',
+        src: 'https://drive.google.com/file/d/1gi4Xr6sdjShBothlA20ior0vuO--pwFu/view?usp=drive_link',
     },
     {
         id: 2,
